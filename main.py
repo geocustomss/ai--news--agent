@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
-from news_fetcher import fetch_news, format_news_for_email
+from news_fetcher import fetch_news, format_news_for_email, deduplicate_news
 from email_sender import send_email
+from ai_summarizer import summarize_news
 import datetime
 
 # Load environment variables from the script's directory
@@ -19,8 +20,14 @@ def job():
         print("No news items found. Aborting.")
         return
 
+    # 1.5 Deduplicate
+    news_items = deduplicate_news(news_items)
+
+    # 1.8 AI Summary
+    ai_summary = summarize_news(news_items)
+
     # 2. Format News
-    email_body = format_news_for_email(news_items)
+    email_body = format_news_for_email(news_items, ai_summary)
     
     # 3. Send Email
     recipient = os.getenv("EMAIL_RECIPIENT")

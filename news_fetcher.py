@@ -44,28 +44,72 @@ def fetch_news() -> list[dict]:
             
     return news_items
 
-def format_news_for_email(news_items):
+def deduplicate_news(news_items):
     """
-    Formats the list of news items into a HTML string for email.
+    Remove duplicate articles based on title.
+    """
+    seen_titles = set()
+    unique_items = []
+    for item in news_items:
+        clean_title = item['title'].lower().strip()
+        if clean_title not in seen_titles:
+            seen_titles.add(clean_title)
+            unique_items.append(item)
+    return unique_items
+
+def format_news_for_email(news_items, ai_summary=None):
+    """
+    Formats the list of news items into a Premium HTML string for email.
     """
     if not news_items:
         return "<p>No news found today.</p>"
-        
-    html_content = "<h2>Daily AI News Summary</h2>"
-    
-    # Sort simple logic: just group by source for now (or could sort by date if parsed)
-    # For now, we return as is.
-    
-    for item in news_items:
-        html_content += f"""
-        <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
-            <h3 style="margin-bottom: 5px;"><a href="{item['link']}">{item['title']}</a></h3>
-            <p style="font-size: 0.8em; color: gray;">{item['source']} - {item['published']}</p>
-            <p>{item['summary']}</p>
+
+    summary_section = ""
+    if ai_summary:
+        summary_section = f"""
+        <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
+            <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif;">Executive Summary</h2>
+            <div style="color: #555; line-height: 1.6; font-size: 16px;">
+                {ai_summary.replace('\n', '<br>')}
+            </div>
         </div>
         """
         
-    return html_content
+    articles_html = ""
+    for item in news_items:
+        articles_html += f"""
+        <div style="margin-bottom: 25px; background: white; border: 1px solid #e1e4e8; border-radius: 12px; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;">
+            <div style="padding: 20px;">
+                <span style="display: inline-block; background: #e7f3ff; color: #007bff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px;">{item['source']}</span>
+                <h3 style="margin: 0 0 10px 0; font-size: 20px; color: #1a1a1a;">
+                    <a href="{item['link']}" style="color: #1a1a1a; text-decoration: none;">{item['title']}</a>
+                </h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px; line-height: 1.5;">{item['summary']}</p>
+                <div style="font-size: 12px; color: #999;">{item['published']}</div>
+            </div>
+        </div>
+        """
+        
+    full_html = f"""
+    <html>
+        <body style="background-color: #ffffff; margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: 0 auto;">
+                <h1 style="color: #1a1a1a; text-align: center; margin-bottom: 30px; font-size: 28px;">Daily AI Intelligence</h1>
+                <p style="text-align: center; color: #666; margin-bottom: 40px;">Selected news for {datetime.now().strftime('%B %d, %Y')}</p>
+                
+                {summary_section}
+                
+                <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; margin-bottom: 20px;">Top Stories</h2>
+                {articles_html}
+                
+                <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+                    Sent by your automated AI News Agent.
+                </div>
+            </div>
+        </body>
+    </html>
+    """
+    return full_html
 
 if __name__ == "__main__":
     # Test run
