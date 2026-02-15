@@ -66,11 +66,12 @@ def format_news_for_email(news_items, ai_summary=None):
 
     summary_section = ""
     if ai_summary:
+        formatted_summary = ai_summary.replace('\n', '<br>')
         summary_section = f"""
         <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
             <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif;">Executive Summary</h2>
             <div style="color: #555; line-height: 1.6; font-size: 16px;">
-                {ai_summary.replace('\n', '<br>')}
+                {formatted_summary}
             </div>
         </div>
         """
