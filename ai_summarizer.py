@@ -16,13 +16,38 @@ def summarize_news(news_items):
         model = genai.GenerativeModel('gemini-1.5-flash')
         
         # Prepare the prompt
-        prompt = "Create a concise, bulleted executive summary (max 200 words) of the following AI news headlines. Focus on the most impactful trends and breakthroughs. Use a professional but engaging tone.\n\n"
+        prompt = """
+        Analyze the following AI news headlines and summaries for today.
+        
+        1. Create a concise "Executive Summary" (3-4 bullet points) of the overall trends.
+        2. Identify the SINGLE most impactful story.
+        3. For that top story, create a "Key Takeaway: Why it Matters" section explaining the industry impact or future implications (max 100 words).
+        
+        Format your response exactly like this:
+        SUMMARY: [Your bullet points here]
+        DEEP DIVE: [Your takeaway here]
+        
+        News items:
+        """
         for item in news_items:
             prompt += f"- {item['title']}: {item['summary']}\n"
             
         response = model.generate_content(prompt)
-        return response.text
+        text = response.text
+        
+        # Simple parsing
+        summary = ""
+        deep_dive = ""
+        
+        if "DEEP DIVE:" in text:
+            parts = text.split("DEEP DIVE:")
+            summary = parts[0].replace("SUMMARY:", "").strip()
+            deep_dive = parts[1].strip()
+        else:
+            summary = text.replace("SUMMARY:", "").strip()
+            
+        return {"summary": summary, "deep_dive": deep_dive}
         
     except Exception as e:
         print(f"AI Summarization failed: {e}")
-        return "Failed to generate AI summary."
+        return {"summary": "Failed to generate AI summary.", "deep_dive": ""}

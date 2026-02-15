@@ -7,7 +7,10 @@ RSS_FEEDS = {
     "Wired AI": "https://www.wired.com/feed/tag/ai/latest/rss",
     "The Verge AI": "https://www.theverge.com/rss/ai/index.xml",
     "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "MIT Tech Review AI": "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+    "MIT Tech Review AI": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+    "OpenAI News": "https://openai.com/news/rss.xml",
+    "Google DeepMind": "https://deepmind.google/blog/rss.xml",
+    "Hugging Face Blog": "https://huggingface.co/blog/feed.xml"
 }
 
 def fetch_news() -> list[dict]:
@@ -65,18 +68,42 @@ def format_news_for_email(news_items, ai_summary=None):
         return "<p>No news found today.</p>"
 
     summary_section = ""
-    if ai_summary:
-        formatted_summary = ai_summary.replace('\n', '<br>')
+    deep_dive_section = ""
+    
+    if ai_summary and isinstance(ai_summary, dict):
+        if ai_summary.get('deep_dive'):
+            deep_dive_section = f"""
+            <div style="background-color: #1a1a1a; color: #ffffff; padding: 25px; margin-bottom: 30px; border-radius: 12px; font-family: 'Segoe UI', Arial, sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <div style="text-transform: uppercase; font-size: 11px; letter-spacing: 1px; color: #007bff; font-weight: bold; margin-bottom: 10px;">Deep Dive: Industry Impact</div>
+                <h2 style="margin-top: 0; color: #ffffff; font-size: 22px; margin-bottom: 15px;">The Big Picture</h2>
+                <div style="color: #cccccc; line-height: 1.6; font-size: 15px;">
+                    {ai_summary['deep_dive'].replace('\n', '<br>')}
+                </div>
+            </div>
+            """
+            
+        if ai_summary.get('summary'):
+            summary_section = f"""
+            <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
+                <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">Executive Summary</h2>
+                <div style="color: #555; line-height: 1.6; font-size: 15px;">
+                    {ai_summary['summary'].replace('\n', '<br>')}
+                </div>
+            </div>
+            """
+    elif ai_summary:
+        # Fallback for old string format
         summary_section = f"""
         <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
-            <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif;">Executive Summary</h2>
-            <div style="color: #555; line-height: 1.6; font-size: 16px;">
-                {formatted_summary}
+            <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">Executive Summary</h2>
+            <div style="color: #555; line-height: 1.6; font-size: 15px;">
+                {ai_summary.replace('\n', '<br>')}
             </div>
         </div>
         """
         
     articles_html = ""
+    # (rest same as before, but let's re-verify line ranges)
     for item in news_items:
         articles_html += f"""
         <div style="margin-bottom: 25px; background: white; border: 1px solid #e1e4e8; border-radius: 12px; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;">
@@ -98,6 +125,7 @@ def format_news_for_email(news_items, ai_summary=None):
                 <h1 style="color: #1a1a1a; text-align: center; margin-bottom: 30px; font-size: 28px;">Daily AI Intelligence</h1>
                 <p style="text-align: center; color: #666; margin-bottom: 40px;">Selected news for {datetime.now().strftime('%B %d, %Y')}</p>
                 
+                {deep_dive_section}
                 {summary_section}
                 
                 <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; margin-bottom: 20px;">Top Stories</h2>
