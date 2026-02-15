@@ -22,14 +22,18 @@ def summarize_news(news_items):
         1. Create a concise "Executive Summary" (3-4 bullet points) of the overall trends.
         2. Identify the SINGLE most impactful story.
         3. For that top story, create a "Key Takeaway: Why it Matters" section explaining the industry impact or future implications (max 100 words).
+        
+        SPECIAL INSTRUCTIONS for Sources:
+        - If a story is from "ArXiv AI", it is a research paper. TRANSLATE the technical/academic title into clear, plain English.
+        - If a story is a "HOT REPO" from "GitHub Radar", explain why exactly people are starring it.
+        
         4. For EVERY story provided, assign ONE of these badges: Breakthrough, Policy, Market, Tool.
         
-        Format your response exactly like this:
+        FORMAT:
         SUMMARY: [Your bullet points here]
         DEEP DIVE: [Your takeaway here]
-        BADGES:
-        - [Story Title] | [Badge Name]
-        - [Story Title] | [Badge Name]
+        BADGES & TITLES:
+        - [Original Title] | [Badge Name] | [Simplified Plain-English Title]
         ...
         
         News items:
@@ -48,19 +52,24 @@ def summarize_news(news_items):
             summary_part, rest = text.split("DEEP DIVE:", 1)
             summary = summary_part.replace("SUMMARY:", "").strip()
             
-            if "BADGES:" in rest:
-                deep_dive, badges_part = rest.split("BADGES:", 1)
+            if "BADGES & TITLES:" in rest:
+                deep_dive, badges_part = rest.split("BADGES & TITLES:", 1)
                 deep_dive = deep_dive.strip()
                 
-                # Parse badges and apply to news_items
+                # Parse badges and titles
                 for line in badges_part.split('\n'):
                     if '|' in line:
-                        title_part, badge_part = line.strip('- ').split('|', 1)
-                        title_part = title_part.strip().lower()
-                        badge_part = badge_part.strip()
-                        for item in news_items:
-                            if item['title'].lower() in title_part or title_part in item['title'].lower():
-                                item['badge'] = badge_part
+                        parts = [p.strip() for p in line.strip('- ').split('|')]
+                        if len(parts) >= 2:
+                            orig_title = parts[0].lower()
+                            badge = parts[1]
+                            simplified_title = parts[2] if len(parts) >= 3 else ""
+                            
+                            for item in news_items:
+                                if item['title'].lower() in orig_title or orig_title in item['title'].lower():
+                                    item['badge'] = badge
+                                    if simplified_title and item['source'] == "ArXiv AI":
+                                        item['title'] = simplified_title
             else:
                 deep_dive = rest.strip()
         else:

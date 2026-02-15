@@ -148,11 +148,20 @@ def format_news_for_email(news_items, ai_summary=None):
         </div>
         """
         
-    articles_html = ""
+    news_html = ""
+    research_html = ""
+    code_html = ""
+    
     for item in news_items:
         # Badge Logic
         badge_html = ""
         badge = item.get('badge', '')
+        if not badge:
+            if item['source'] == "ArXiv AI":
+                badge = "Breakthrough" # Fallback for research
+            elif item['source'] == "GitHub Radar":
+                badge = "Tool"
+
         if badge:
             badge_colors = {
                 "Breakthrough": "#d4edda; color: #155724; border: 1px solid #c3e6cb;",
@@ -160,17 +169,20 @@ def format_news_for_email(news_items, ai_summary=None):
                 "Market": "#d1ecf1; color: #0c5460; border: 1px solid #bee5eb;",
                 "Tool": "#e2e3e5; color: #383d41; border: 1px solid #d6d8db;",
             }
-            color_style = badge_colors.get(badge, "#f8f9fa; color: #333; border: 1px solid #ddd;")
+            color_style = badge_colors.get(badge, "background-color: #f8f9fa; color: #333; border: 1px solid #ddd;")
+            # Ensure color_style is properly prefixed if it's from the dict (which it is)
+            if not color_style.startswith("background-color:"):
+                color_style = "background-color: " + color_style
             badge_html = f'<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-bottom: 8px; {color_style}">{badge.upper()}</span>'
 
-        articles_html += f"""
+        card_html = f"""
         <div style="margin-bottom: 25px; background: white; border: 1px solid #e1e4e8; border-radius: 12px; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;">
             <div style="padding: 20px;">
                 <div style="margin-bottom: 10px;">
                     <span style="display: inline-block; background: #e7f3ff; color: #007bff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">{item['source']}</span>
                     {badge_html}
                 </div>
-                <h3 style="margin: 0 0 10px 0; font-size: 20px; color: #1a1a1a;">
+                <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #1a1a1a;">
                     <a href="{item['link']}" style="color: #1a1a1a; text-decoration: none;">{item['title']}</a>
                 </h3>
                 <p style="color: #666; font-size: 14px; margin-bottom: 15px; line-height: 1.5;">{item['summary']}</p>
@@ -178,6 +190,21 @@ def format_news_for_email(news_items, ai_summary=None):
             </div>
         </div>
         """
+        
+        if item['source'] == "ArXiv AI":
+            research_html += card_html
+        elif item['source'] == "GitHub Radar":
+            code_html += card_html
+        else:
+            news_html += card_html
+
+    sections_html = ""
+    if news_html:
+        sections_html += '<h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; margin-bottom: 20px; font-size: 20px;">📰 Industry Headlines</h2>' + news_html
+    if research_html:
+        sections_html += '<h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; margin: 40px 0 20px 0; font-size: 20px;">🔬 Science & Research Spotlight</h2>' + research_html
+    if code_html:
+        sections_html += '<h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; margin: 40px 0 20px 0; font-size: 20px;">⚙️ Trending Code & Tools</h2>' + code_html
         
     full_html = f"""
     <html>
@@ -189,8 +216,7 @@ def format_news_for_email(news_items, ai_summary=None):
                 {deep_dive_section}
                 {summary_section}
                 
-                <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; margin-bottom: 20px;">Top Stories</h2>
-                {articles_html}
+                {sections_html}
                 
                 <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
                     Sent by your automated AI News Agent.
