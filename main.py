@@ -80,7 +80,7 @@ def archive_report(html_content):
     
     for report in reports:
         date_name = report.stem
-        index_html += f'<li><a href="{report.name}">{date_name}</a><span class="date">Daily AI Intelligence Report</span></li>\n'
+        index_html += f'<li><a href="archive/{report.name}">{date_name}</a><span class="date">Daily AI Intelligence Report</span></li>\n'
         
     index_html += """
         </ul>
@@ -88,10 +88,11 @@ def archive_report(html_content):
     </html>
     """
     
-    with open(archive_dir / "index.html", "w", encoding="utf-8") as f:
+    # Save index to ROOT for GitHub Pages landing
+    with open(Path(__file__).parent / "index.html", "w", encoding="utf-8") as f:
         f.write(index_html)
     
-    print(f"Report archived to {report_path.name}")
+    print(f"Report archived to {report_path.name} and index updated in root.")
 
 if __name__ == "__main__":
     job()
