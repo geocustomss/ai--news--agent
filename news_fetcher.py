@@ -1,6 +1,8 @@
 import feedparser
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
+import requests
+import os
 
 # RSS Feeds for Major AI News Sources
 RSS_FEEDS = {
@@ -16,11 +18,11 @@ RSS_FEEDS = {
 
 def fetch_news() -> list[dict]:
     """
-    Fetches news from the defined RSS feeds.
-    Returns a list of dictionaries containing 'title', 'link', 'source', and 'published'.
+    Fetches news from the defined RSS feeds + GitHub Trending Radar.
     """
     news_items = []
     
+    # 1. RSS Feeds
     print("Fetching news from major sources...")
     
     for source, url in RSS_FEEDS.items():
@@ -46,7 +48,47 @@ def fetch_news() -> list[dict]:
         except Exception as e:
             print(f"Error fetching {source}: {e}")
             
+    # 2. GitHub Trending Radar
+    github_repos = fetch_github_trending_repos()
+    news_items.extend(github_repos)
+            
     return news_items
+
+def fetch_github_trending_repos():
+    """
+    Fetch top 3 most-starred AI repos created in the last 7 days.
+    """
+    print("Fetching GitHub Trending Radar...")
+    repos_list = []
+    try:
+        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        query = f"topic:ai+topic:llm+created:>{seven_days_ago}"
+        url = f"https://api.github.com/search/repositories?q={query}&sort=stars&order=desc&per_page=3"
+        
+        # Optional Token
+        headers = {}
+        token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_API_KEY") # Check common secret names
+        if token:
+            headers["Authorization"] = f"token {token}"
+            
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            for repo in data.get('items', []):
+                repos_list.append({
+                    "source": "GitHub Radar",
+                    "title": f"HOT REPO: {repo['name']}",
+                    "link": repo['html_url'],
+                    "published": f"Created: {repo['created_at'][:10]}",
+                    "summary": f"{repo['description']} (Stars: {repo['stargazers_count']})",
+                    "badge": "Tool"
+                })
+        else:
+            print(f"GitHub API Error: {response.status_code}")
+    except Exception as e:
+        print(f"Failed to fetch GitHub Radar: {e}")
+    
+    return repos_list
 
 def deduplicate_news(news_items):
     """
