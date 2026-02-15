@@ -10,7 +10,8 @@ RSS_FEEDS = {
     "MIT Tech Review AI": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
     "OpenAI News": "https://openai.com/news/rss.xml",
     "Google DeepMind": "https://deepmind.google/blog/rss.xml",
-    "Hugging Face Blog": "https://huggingface.co/blog/feed.xml"
+    "Hugging Face Blog": "https://huggingface.co/blog/feed.xml",
+    "ArXiv AI": "https://rss.arxiv.org/rss/cs.AI"
 }
 
 def fetch_news() -> list[dict]:
@@ -72,43 +73,61 @@ def format_news_for_email(news_items, ai_summary=None):
     
     if ai_summary and isinstance(ai_summary, dict):
         if ai_summary.get('deep_dive'):
+            formatted_deep_dive = ai_summary['deep_dive'].replace('\n', '<br>')
             deep_dive_section = f"""
             <div style="background-color: #1a1a1a; color: #ffffff; padding: 25px; margin-bottom: 30px; border-radius: 12px; font-family: 'Segoe UI', Arial, sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                 <div style="text-transform: uppercase; font-size: 11px; letter-spacing: 1px; color: #007bff; font-weight: bold; margin-bottom: 10px;">Deep Dive: Industry Impact</div>
                 <h2 style="margin-top: 0; color: #ffffff; font-size: 22px; margin-bottom: 15px;">The Big Picture</h2>
                 <div style="color: #cccccc; line-height: 1.6; font-size: 15px;">
-                    {ai_summary['deep_dive'].replace('\n', '<br>')}
+                    {formatted_deep_dive}
                 </div>
             </div>
             """
             
         if ai_summary.get('summary'):
+            formatted_summary = ai_summary['summary'].replace('\n', '<br>')
             summary_section = f"""
             <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
                 <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">Executive Summary</h2>
                 <div style="color: #555; line-height: 1.6; font-size: 15px;">
-                    {ai_summary['summary'].replace('\n', '<br>')}
+                    {formatted_summary}
                 </div>
             </div>
             """
     elif ai_summary:
         # Fallback for old string format
+        formatted_summary = ai_summary.replace('\n', '<br>')
         summary_section = f"""
         <div style="background-color: #f8f9fa; border-left: 4px solid #007bff; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
             <h2 style="margin-top: 0; color: #333; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">Executive Summary</h2>
             <div style="color: #555; line-height: 1.6; font-size: 15px;">
-                {ai_summary.replace('\n', '<br>')}
+                {formatted_summary}
             </div>
         </div>
         """
         
     articles_html = ""
-    # (rest same as before, but let's re-verify line ranges)
     for item in news_items:
+        # Badge Logic
+        badge_html = ""
+        badge = item.get('badge', '')
+        if badge:
+            badge_colors = {
+                "Breakthrough": "#d4edda; color: #155724; border: 1px solid #c3e6cb;",
+                "Policy": "#fff3cd; color: #856404; border: 1px solid #ffeeba;",
+                "Market": "#d1ecf1; color: #0c5460; border: 1px solid #bee5eb;",
+                "Tool": "#e2e3e5; color: #383d41; border: 1px solid #d6d8db;",
+            }
+            color_style = badge_colors.get(badge, "#f8f9fa; color: #333; border: 1px solid #ddd;")
+            badge_html = f'<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-bottom: 8px; {color_style}">{badge.upper()}</span>'
+
         articles_html += f"""
         <div style="margin-bottom: 25px; background: white; border: 1px solid #e1e4e8; border-radius: 12px; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;">
             <div style="padding: 20px;">
-                <span style="display: inline-block; background: #e7f3ff; color: #007bff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 10px;">{item['source']}</span>
+                <div style="margin-bottom: 10px;">
+                    <span style="display: inline-block; background: #e7f3ff; color: #007bff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">{item['source']}</span>
+                    {badge_html}
+                </div>
                 <h3 style="margin: 0 0 10px 0; font-size: 20px; color: #1a1a1a;">
                     <a href="{item['link']}" style="color: #1a1a1a; text-decoration: none;">{item['title']}</a>
                 </h3>

@@ -22,10 +22,15 @@ def summarize_news(news_items):
         1. Create a concise "Executive Summary" (3-4 bullet points) of the overall trends.
         2. Identify the SINGLE most impactful story.
         3. For that top story, create a "Key Takeaway: Why it Matters" section explaining the industry impact or future implications (max 100 words).
+        4. For EVERY story provided, assign ONE of these badges: Breakthrough, Policy, Market, Tool.
         
         Format your response exactly like this:
         SUMMARY: [Your bullet points here]
         DEEP DIVE: [Your takeaway here]
+        BADGES:
+        - [Story Title] | [Badge Name]
+        - [Story Title] | [Badge Name]
+        ...
         
         News items:
         """
@@ -40,9 +45,24 @@ def summarize_news(news_items):
         deep_dive = ""
         
         if "DEEP DIVE:" in text:
-            parts = text.split("DEEP DIVE:")
-            summary = parts[0].replace("SUMMARY:", "").strip()
-            deep_dive = parts[1].strip()
+            summary_part, rest = text.split("DEEP DIVE:", 1)
+            summary = summary_part.replace("SUMMARY:", "").strip()
+            
+            if "BADGES:" in rest:
+                deep_dive, badges_part = rest.split("BADGES:", 1)
+                deep_dive = deep_dive.strip()
+                
+                # Parse badges and apply to news_items
+                for line in badges_part.split('\n'):
+                    if '|' in line:
+                        title_part, badge_part = line.strip('- ').split('|', 1)
+                        title_part = title_part.strip().lower()
+                        badge_part = badge_part.strip()
+                        for item in news_items:
+                            if item['title'].lower() in title_part or title_part in item['title'].lower():
+                                item['badge'] = badge_part
+            else:
+                deep_dive = rest.strip()
         else:
             summary = text.replace("SUMMARY:", "").strip()
             
